@@ -1,0 +1,131 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    tools:context=".DetailResepActivity">
+
+    <!-- Tombol Kembali -->
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@android:color/transparent"
+        android:src="@drawable/back"
+        android:scaleType="centerInside"
+        android:adjustViewBounds="true"
+        android:contentDescription="Kembali"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="40dp" />
+
+    <!-- Judul "Detail Resep" -->
+    <TextView
+        android:id="@+id/tvTentang"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Detail Resep"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btnBack"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="40dp" />
+
+    <!-- Scrollable Area -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/mainScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tvTentang"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Gambar -->
+            <ImageView
+                android:id="@+id/detailImage"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginTop="16dp"
+                android:contentDescription="Logo RasaNusantara"
+                android:scaleType="centerCrop"
+                android:src="@drawable/logo" />
+
+            <!-- Nama Resep -->
+            <TextView
+                android:id="@+id/detailText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="RasaNusantara"
+                android:textColor="#000000"
+                android:textSize="25sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginTop="15dp" />
+
+            <!-- Deskripsi -->
+            <TextView
+                android:id="@+id/description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:layout_marginTop="15dp" />
+
+            <!-- Bahan-bahan -->
+            <TextView
+                android:id="@+id/bahanBahan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bahan-bahan :"
+                android:textColor="#000000"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp" />
+
+            <TextView
+                android:id="@+id/bahan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1.testing"
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:layout_marginTop="1dp" />
+
+            <!-- Langkah-langkah -->
+            <TextView
+                android:id="@+id/langkahMemasak"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Langkah-langkah memasak :"
+                android:textColor="#000000"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp" />
+
+            <TextView
+                android:id="@+id/langkah"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1.testing"
+                android:textColor="#000000"
+                android:textSize="20sp"
+                android:layout_marginTop="1dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

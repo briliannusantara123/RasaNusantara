@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/footer_home"
+        android:title="Beranda"
+        android:icon="@drawable/home" />
+    <item
+        android:id="@+id/footer_tentang"
+        android:title="Tentang"
+        android:icon="@drawable/gear" />
+</menu>
