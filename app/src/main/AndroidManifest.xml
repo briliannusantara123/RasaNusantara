@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permission HARUS di sini, di luar <application> -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- Tambahkan ini untuk Android 13+ jika butuh akses gambar -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:allowBackup="true"
@@ -11,19 +16,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RasaNusantara"
-        tools:targetApi="31" >
-        <activity
-            android:name=".MainActivity"
-            android:exported="true" >
+        tools:targetApi="31">
+
+        <activity android:name=".LoginActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".ResepActivity" />
         <activity android:name=".TentangActivity" />
         <activity android:name=".DetailResepActivity" />
+        <activity android:name=".TambahResepActivity" />
+        <activity android:name=".ResepFavoritActivity" />
+        <activity android:name=".RegisterActivity" />
+
+
     </application>
 
 </manifest>

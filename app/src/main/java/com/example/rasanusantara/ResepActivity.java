@@ -1,198 +1,230 @@
 package com.example.rasanusantara;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.NestedScrollView;
+
+import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.util.*;
+
 public class ResepActivity extends AppCompatActivity {
+
+    private SQLiteHelper dbHelper;
+    private LinearLayout containerKategori;
+    private LinearLayout containerSubKategori;
+    private NestedScrollView scrollView;
+
+    // Menyimpan header view dari setiap kategori untuk keperluan scroll
+    private Map<String, View> kategoriHeaderMap = new LinkedHashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_resep);
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
+        // Ambil username dari SharedPreferences untuk ditampilkan di greeting
+        TextView tvGreeting = findViewById(R.id.tvGreeting);
+        SharedPreferences sharedPreferences = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String username = sharedPreferences.getString("username", "User");
+        tvGreeting.setText("Hi " + username);
 
-        // Tandai item "home" sebagai yang dipilih
+        // Inisialisasi database dan elemen-elemen layout
+        dbHelper = new SQLiteHelper(this);
+        containerKategori = findViewById(R.id.containerKategori);
+        containerSubKategori = findViewById(R.id.containerSubKategori);
+        scrollView = findViewById(R.id.mainScroll);
+
+        // Tombol tambah resep
+        Button tambahResep = findViewById(R.id.btnTambahResep);
+        tambahResep.setOnClickListener(v ->
+                startActivity(new Intent(this, TambahResepActivity.class))
+        );
+
+        // Bottom Navigation setup
+        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
         bottomNav.setSelectedItemId(R.id.footer_home);
 
         bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
+            int itemId = item.getItemId();
 
-            if (id == R.id.footer_home) {
-                // Sudah di halaman ini, jadi hanya tandai checked
-                item.setChecked(true);
-                return true;
-            } else if (id == R.id.footer_tentang) {
-                item.setChecked(true); // Tandai checked sebelum pindah
+            if (itemId == R.id.footer_home) {
+                return true; // Sudah di halaman ini
+            } else if (itemId == R.id.footer_tentang) {
                 startActivity(new Intent(this, TentangActivity.class));
-                overridePendingTransition(0, 0); // Opsional: hilangkan animasi transisi
+                overridePendingTransition(0, 0);
+                return true;
+            } else if (itemId == R.id.footer_fav) {
+                startActivity(new Intent(this, ResepFavoritActivity.class));
+                overridePendingTransition(0, 0);
                 return true;
             }
 
             return false;
         });
+    }
 
-        // Scroll ke bagian tertentu saat gambar diklik
-        ImageView imgSunda = findViewById(R.id.imgSunda);
-        ImageView imgPadang = findViewById(R.id.imgPadang);
-        ImageView imgJawa = findViewById(R.id.imgJawa);
-        ImageView imgBetawi = findViewById(R.id.imgBetawi);
-        ImageView imgBali = findViewById(R.id.imgBali);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Menampilkan ulang daftar resep saat kembali dari halaman lain
+        tampilkanResepDariDatabase();
+    }
 
-        NestedScrollView mainScroll = findViewById(R.id.mainScroll);
-        View sectionSunda = findViewById(R.id.sectionSunda);
-        View sectionPadang = findViewById(R.id.sectionPadang);
-        View sectionJawa = findViewById(R.id.sectionJawa);
-        View sectionBetawi = findViewById(R.id.sectionBetawi);
-        View sectionBali = findViewById(R.id.sectionBali);
+    /**
+     * Fungsi untuk mengambil semua resep dari database dan menampilkannya
+     * secara dinamis berdasarkan kategori (asal daerah).
+     */
+    private void tampilkanResepDariDatabase() {
+        // Bersihkan kontainer sebelumnya
+        containerKategori.removeAllViews();
+        containerSubKategori.removeAllViews();
+        kategoriHeaderMap.clear();
 
-        imgSunda.setOnClickListener(v -> mainScroll.smoothScrollTo(0, sectionSunda.getTop()));
-        imgPadang.setOnClickListener(v -> mainScroll.smoothScrollTo(0, sectionPadang.getTop()));
-        imgJawa.setOnClickListener(v -> mainScroll.smoothScrollTo(0, sectionJawa.getTop()));
-        imgBetawi.setOnClickListener(v -> mainScroll.smoothScrollTo(0, sectionBetawi.getTop()));
-        imgBali.setOnClickListener(v -> mainScroll.smoothScrollTo(0, sectionBali.getTop()));
+        List<Resep> resepList = dbHelper.getSemuaResep();
+        LayoutInflater inflater = LayoutInflater.from(this);
 
-        LinearLayout nasitimbeltop = findViewById(R.id.nasitimbeltop);
-        LinearLayout nasitimbel = findViewById(R.id.nasitimbel);
-        LinearLayout rendangtop = findViewById(R.id.rendangtop);
-        LinearLayout gudegtoptop = findViewById(R.id.gudegtop);
-        LinearLayout sotobetawitop = findViewById(R.id.sotobetawitop);
-        LinearLayout sayurasem = findViewById(R.id.sayurasem);
+        // Kelompokkan resep berdasarkan asal/kategori
+        Map<String, List<Resep>> mapKategori = new LinkedHashMap<>();
+        for (Resep resep : resepList) {
+            String asal = resep.getAsal().trim();
+            mapKategori.computeIfAbsent(asal, k -> new ArrayList<>()).add(resep);
+        }
 
-// Listener untuk Nasi Timbel (pakai untuk nasitimbeltop dan nasitimbel)
-        View.OnClickListener klikNasiTimbel = v -> {
-            Intent intent = new Intent(ResepActivity.this, DetailResepActivity.class);
-            intent.putExtra("imageResId", R.drawable.nasi_timbel);
-            intent.putExtra("title", "Nasi Timbel");
-            intent.putExtra("bahan", "1. Ayam Goreng / Ikan Asin / Tahu Tempe:\n" +
-                    "  - 1 ekor ayam potong ikan asin,tahu,atau tempe\n" +
-                    "  - Bumbu ungkep(bawang putih,ketumbar,kunyit,garam)\n" +
-                    "2. Sambal Terasi:\n" +
-                    "  - 10 buah cabai merah keriting\n" +
-                    "  - 5 buah cabai rawit merah (sesuai selera)\n" +
-                    "  - 1 sdt terasi (dibakar)\n" +
-                    "  - 1 buah tomat merah\n" +
-                    "  - 1 siung bawang putih\n" +
-                    "  - 2 siung bawang merah\n" +
-                    "  - Garam, gula secukupnya\n" +
-                    "  - Minyak goreng secukupnya\n" +
-                    "3. Lalapan:\n" +
-                    "  - Daun kemangi\n" +
-                    "  - Mentimun\n" +
-                    "  - Kol\n" +
-                    "  - Tomat\n" +
-                    "  - Daun selada");
-            intent.putExtra("langkah", "1. Siapkan Nasi :\n" +
-                    "  - Cuci beras hingga bersih (2 gelas beras).\n" +
-                    "  - Masak nasi seperti biasa menggunakan rice cooker atau kukusan. Jika ingin lebih wangi, bisa tambahkan sedikit daun pandan saat menanak.\n" +
-                    "  - Setelah matang, diamkan nasi selama 10–15 menit agar uapnya berkurang dan teksturnya lebih padat.\n" +
-                    "2. Siapkan Daun Pisang :\n" +
-                    "  - Layukan daun pisang di atas api kompor sebentar agar lentur dan tidak mudah sobek saat dibungkus.\n" +
-                    "  - Lap daun dengan kain bersih untuk memastikan tidak ada kotoran.\n" +
-                    "3. Bungkus Nasi :\n" +
-                    "  - Ambil nasi hangat secukupnya, taruh di atas daun pisang, bentuk memanjang seperti lontong.\n" +
-                    "  - Gulung daun pisang, rapatkan kedua ujungnya, dan bisa disemat dengan tusuk gigi.\n" +
-                    "  - Kukus kembali nasi yang sudah dibungkus selama ±10 menit agar aromanya meresap ke dalam nasi.\n");
-            intent.putExtra("description","Nasi Timbel adalah hidangan khas Sunda yang disajikan dengan nasi putih panas yang dibungkus daun pisang. Proses pembungkusan ini memberikan aroma khas yang harum dan alami. Biasanya, nasi timbel disajikan dengan aneka lauk seperti ayam goreng, tahu, tempe, ikan asin, sambal, lalapan segar (mentimun, kemangi, tomat), dan kadang-kadang ditambah sayur asem.");
-            startActivity(intent);
-        };
+        // Buat tombol kategori horizontal
+        for (String kategori : mapKategori.keySet()) {
+            Button btnKategori = new Button(this);
+            btnKategori.setText(kategori);
+            btnKategori.setTextSize(14f);
+            btnKategori.setAllCaps(false);
+            btnKategori.setBackgroundResource(R.drawable.button_kategori_background);
 
-// Listener untuk Rendang
-        View.OnClickListener klikRendang = v -> {
-            Intent intent = new Intent(ResepActivity.this, DetailResepActivity.class);
-            intent.putExtra("imageResId", R.drawable.rendang);
-            intent.putExtra("title", "Rendang Sapi");
-            intent.putExtra("bahan", "1. Daging sapi\n" +
-                    "2. Santan\n" +
-                    "3. Bumbu rempah seperti serai, lengkuas, daun jeruk\n" +
-                    "4. Cabe merah\n" +
-                    "5. Bawang merah dan bawang putih\n" +
-                    "6. Garam dan gula secukupnya");
-            intent.putExtra("langkah", "1. Potong-potong daging sapi.\n" +
-                    "2. Haluskan bumbu rempah.\n" +
-                    "3. Tumis bumbu hingga harum.\n" +
-                    "4. Masukkan daging dan santan.\n" +
-                    "5. Masak dengan api kecil hingga kuah mengering dan daging empuk.");
-            intent.putExtra("description","Rendang adalah masakan khas Padang yang terbuat dari daging sapi yang dimasak dengan santan dan berbagai bumbu rempah hingga kering dan empuk.");
-            startActivity(intent);
-        };
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(280, 200);
+            params.setMargins(8, 15, 8, 15);
+            btnKategori.setLayoutParams(params);
 
-// Listener untuk Gudeg
-        View.OnClickListener klikGudeg = v -> {
-            Intent intent = new Intent(ResepActivity.this, DetailResepActivity.class);
-            intent.putExtra("imageResId", R.drawable.gudeg);
-            intent.putExtra("title", "Gudeg");
-            intent.putExtra("bahan", "1. Nangka muda\n" +
-                    "2. Santan\n" +
-                    "3. Daun jati\n" +
-                    "4. Gula merah\n" +
-                    "5. Bawang merah dan bawang putih\n" +
-                    "6. Lengkuas dan serai");
-            intent.putExtra("langkah", "1. Rebus nangka muda hingga empuk.\n" +
-                    "2. Tumis bumbu halus.\n" +
-                    "3. Masukkan nangka dan santan.\n" +
-                    "4. Masak dengan api kecil hingga santan menyusut dan warna coklat tua.\n" +
-                    "5. Tambahkan daun jati untuk warna.");
-            intent.putExtra("description","Gudeg adalah makanan khas Yogyakarta yang terbuat dari nangka muda dimasak dengan santan dan gula merah.");
-            startActivity(intent);
-        };
+            // Scroll ke bagian kategori saat tombol diklik
+            btnKategori.setOnClickListener(v -> {
+                View headerView = kategoriHeaderMap.get(kategori);
+                if (headerView != null) {
+                    scrollView.post(() -> scrollView.scrollTo(0, headerView.getTop()));
+                } else {
+                    Toast.makeText(this, "Kategori tidak ditemukan", Toast.LENGTH_SHORT).show();
+                }
+            });
 
-// Listener untuk Soto Betawi
-        View.OnClickListener klikSotoBetawi = v -> {
-            Intent intent = new Intent(ResepActivity.this, DetailResepActivity.class);
-            intent.putExtra("imageResId", R.drawable.sotobetawi);
-            intent.putExtra("title", "Soto Betawi");
-            intent.putExtra("bahan", "1. Daging sapi\n" +
-                    "2. Santan\n" +
-                    "3. Bumbu soto (bawang putih, bawang merah, kemiri, jahe)\n" +
-                    "4. Tomat\n" +
-                    "5. Kentang goreng\n" +
-                    "6. Daun bawang dan seledri");
-            intent.putExtra("langkah", "1. Rebus daging hingga empuk.\n" +
-                    "2. Tumis bumbu soto hingga harum.\n" +
-                    "3. Masukkan santan dan daging.\n" +
-                    "4. Tambahkan tomat dan kentang goreng.\n" +
-                    "5. Sajikan dengan daun bawang dan seledri.");
-            intent.putExtra("description","Soto Betawi adalah soto khas Jakarta dengan kuah santan dan isian daging sapi serta kentang goreng.");
-            startActivity(intent);
-        };
+            containerKategori.addView(btnKategori);
+        }
 
-// Listener untuk Sayur Asem
-        View.OnClickListener klikSayurAsem = v -> {
-            Intent intent = new Intent(ResepActivity.this, DetailResepActivity.class);
-            intent.putExtra("imageResId", R.drawable.sayur_asem);
-            intent.putExtra("title", "Sayur Asem");
-            intent.putExtra("bahan", "1. Jagung manis\n" +
-                    "2. Labu siam\n" +
-                    "3. Kacang panjang\n" +
-                    "4. Melinjo dan daun melinjo\n" +
-                    "5. Asam jawa\n" +
-                    "6. Bumbu dasar (bawang merah, bawang putih, cabai)");
-            intent.putExtra("langkah", "1. Rebus bumbu dasar hingga harum.\n" +
-                    "2. Masukkan sayuran satu per satu sesuai waktu matang.\n" +
-                    "3. Tambahkan asam jawa dan garam.\n" +
-                    "4. Masak hingga sayuran matang.");
-            intent.putExtra("description","Sayur Asem adalah sup sayur segar dengan rasa asam yang menyegarkan, khas masakan Indonesia.");
-            startActivity(intent);
-        };
+        // Tampilkan resep-resep berdasarkan kategori
+        for (Map.Entry<String, List<Resep>> entry : mapKategori.entrySet()) {
+            String kategori = entry.getKey();
+            List<Resep> daftarResep = entry.getValue();
 
-// Pasang listener ke masing-masing LinearLayout
-        nasitimbeltop.setOnClickListener(klikNasiTimbel);
-        nasitimbel.setOnClickListener(klikNasiTimbel);
-        rendangtop.setOnClickListener(klikRendang);
-        gudegtoptop.setOnClickListener(klikGudeg);
-        sotobetawitop.setOnClickListener(klikSotoBetawi);
-        sayurasem.setOnClickListener(klikSayurAsem);
+            // Header nama kategori
+            TextView header = new TextView(this);
+            header.setText(kategori);
+            header.setTextSize(18);
+            header.setTypeface(null, Typeface.BOLD);
+            header.setPadding(0, 24, 0, 8);
+            containerSubKategori.addView(header);
+            kategoriHeaderMap.put(kategori, header);
 
+            // Kontainer resep-resep dalam kategori ini
+            LinearLayout containerResep = new LinearLayout(this);
+            containerResep.setOrientation(LinearLayout.VERTICAL);
+            containerSubKategori.addView(containerResep);
 
+            // Tampilkan setiap resep
+            for (Resep resep : daftarResep) {
+                View cardView = inflater.inflate(R.layout.item_resep_card, containerResep, false);
 
+                ImageView img = cardView.findViewById(R.id.imgResep);
+                TextView title = cardView.findViewById(R.id.txtJudul);
+                TextView asal = cardView.findViewById(R.id.txtAsal);
+                ImageView btnDelete = cardView.findViewById(R.id.btnDelete);
+                ImageView btnFav = cardView.findViewById(R.id.btnFavorite);
 
+                // Set data resep
+                title.setText(resep.getNama());
+                asal.setText(resep.getAsal());
+
+                // Tampilkan gambar dari blob
+                byte[] fotoBytes = resep.getFotoBlob();
+                if (fotoBytes != null && fotoBytes.length > 0) {
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(fotoBytes, 0, fotoBytes.length);
+                    img.setImageBitmap(bitmap);
+                } else {
+                    img.setImageResource(R.drawable.logo);
+                }
+
+                // Tampilkan status favorit
+                if (resep.getIsFav() == 1) {
+                    btnFav.setImageResource(R.drawable.ic_star);
+                } else {
+                    btnFav.setImageResource(R.drawable.ic_star_border);
+                }
+
+                // Tangani klik favorit
+                SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+                int userId = prefs.getInt("user_id", -1);
+
+                btnFav.setOnClickListener(v -> {
+                    if (userId != -1) {
+                        long result = dbHelper.tambahFavorit(userId, resep.getId());
+                        if (result != -1) {
+                            Toast.makeText(ResepActivity.this, "Berhasil Menambahkan " + resep.getNama() + " ke Favorit", Toast.LENGTH_SHORT).show();
+                            tampilkanResepDariDatabase(); // Refresh tampilan
+                        } else {
+                            Toast.makeText(ResepActivity.this, "Resep sudah ada di favorit", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(ResepActivity.this, "Login terlebih dahulu", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                // Buka detail resep saat card diklik
+                cardView.setOnClickListener(v -> {
+                    Intent intent = new Intent(ResepActivity.this, DetailResepActivity.class);
+                    intent.putExtra("nama", resep.getNama());
+                    intent.putExtra("deskripsi", resep.getDeskripsi());
+                    intent.putExtra("bahan", resep.getBahan());
+                    intent.putExtra("langkah", resep.getLangkah());
+                    intent.putExtra("foto", resep.getFotoBlob());
+                    startActivity(intent);
+                });
+
+                // Tangani tombol hapus resep
+                btnDelete.setOnClickListener(v -> {
+                    new androidx.appcompat.app.AlertDialog.Builder(ResepActivity.this)
+                            .setTitle("Konfirmasi Hapus")
+                            .setMessage("Apakah Anda yakin ingin menghapus resep ini?")
+                            .setPositiveButton("Hapus", (dialog, which) -> {
+                                if (dbHelper.hapusResepById(resep.getId())) {
+                                    Toast.makeText(ResepActivity.this, "Resep berhasil dihapus", Toast.LENGTH_SHORT).show();
+                                    tampilkanResepDariDatabase(); // Refresh tampilan
+                                }
+                            })
+                            .setNegativeButton("Batal", (dialog, which) -> dialog.dismiss())
+                            .show();
+                });
+
+                containerResep.addView(cardView);
+            }
+        }
     }
 }

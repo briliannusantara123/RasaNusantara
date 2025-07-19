@@ -5,6 +5,10 @@
         android:title="Beranda"
         android:icon="@drawable/home" />
     <item
+        android:id="@+id/footer_fav"
+        android:title="Favorit"
+        android:icon="@drawable/ic_star" />
+    <item
         android:id="@+id/footer_tentang"
         android:title="Tentang"
         android:icon="@drawable/gear" />

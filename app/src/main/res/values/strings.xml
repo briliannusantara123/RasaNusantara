@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">RasaNusantara</string>
+    <string-array name="asal_masakan_array">
+        <item>Sunda</item>
+        <item>Padang</item>
+        <item>Jawa</item>
+        <item>Betawi</item>
+        <item>Bali</item>
+    </string-array>
+
 </resources>
